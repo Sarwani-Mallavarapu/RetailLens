@@ -1,3 +1,9 @@
+# additional files to git ignore
+data_pipeline\__pycache__
+data_pipeline\x_data_scraper.py
+data_pipeline\query_tester.ipynb
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
