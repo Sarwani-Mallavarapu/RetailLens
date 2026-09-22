@@ -14,9 +14,8 @@ count_of_books_query = "SELECT COUNT(*) AS total_books " \
 
 
 count_of_available_books_query = "SELECT COUNT(*) AS available_books " \
-                                 "FROM availability_master a " \
-                                 "JOIN books b ON a.id = b.availability_id " \
-                                 "WHERE a.availability = 1"
+                                 "FROM books b "\
+                                 "WHERE availability = True"
 
 
 count_of_5_rated_books_query = "SELECT COUNT(*) AS five_star_books " \
@@ -59,16 +58,19 @@ top_3_books_per_category_query = "SELECT c.category, b.title, b.rating " \
 
 
 # JOIN query used for comparison with pandas.merge()
-all_joined_data_query = "SELECT b.title, b.price_gbp, b.price_inr, b.rating, " \
-                        "c.category, " \
-                        "CASE WHEN a.availability = 1 " \
-                        "THEN 'Yes' ELSE 'No' END AS available " \
-                        "FROM books b " \
-                        "JOIN category_master c " \
-                        "ON b.category_id = c.id " \
-                        "JOIN availability_master a " \
-                        "ON b.availability_id = a.id " \
-                        "ORDER BY c.category, b.rating DESC, b.title ASC"
+all_joined_data_query = (
+    "SELECT "
+    "b.title, "
+    "b.price_gbp, "
+    "b.price_inr, "
+    "b.rating, "
+    "c.category, "
+    "b.availability "
+    "FROM books b "
+    "JOIN category_master c "
+    "ON b.category_id = c.id "
+    "ORDER BY c.category, b.rating DESC, b.title ASC"
+)
 
 
 # DISTINCT requirement
@@ -89,7 +91,6 @@ select_all_books_query = "SELECT * FROM books"
 
 select_all_categories_query = "SELECT * FROM category_master"
 
-select_all_availability_query = "SELECT * FROM availability_master"
 
 
 
@@ -105,8 +106,7 @@ def add_id_to_dataframes(df):
 
 def prepare_pandas_join_result(
     books_dataframe,
-    category_dataframe,
-    availability_dataframe
+    category_dataframe
 ):
     """Reproduces the SQL JOIN using pandas.merge()."""
 
@@ -118,22 +118,6 @@ def prepare_pandas_join_result(
         how="left"
     )
 
-    merged_dataframe = pd.merge(
-        merged_dataframe,
-        availability_dataframe,
-        left_on="availability_id",
-        right_on="id",
-        how="left",
-        suffixes=("", "_availability")
-    )
-
-    merged_dataframe["available"] = merged_dataframe["availability"].map(
-        {
-            True: "Yes",
-            False: "No"
-        }
-    )
-
     merged_dataframe = merged_dataframe[
         [
             "title",
@@ -141,12 +125,11 @@ def prepare_pandas_join_result(
             "price_inr",
             "rating",
             "category",
-            "available"
+            "availability"
         ]
     ]
 
     return merged_dataframe
-
 
 def standardize_join_result(df):
     """Standardizes JOIN results before comparing DataFrames."""
@@ -160,7 +143,7 @@ def standardize_join_result(df):
             "price_inr",
             "rating",
             "category",
-            "available"
+            "availability"
         ]
     ]
 
@@ -176,7 +159,6 @@ def standardize_join_result(df):
 
 def execute_checks_and_queries(
     category_dataframe,
-    availability_dataframe,
     books_dataframe,
     cleaned_data
 ):
@@ -184,7 +166,6 @@ def execute_checks_and_queries(
 
     # Add IDs for comparison with database-generated IDs
     category_dataframe = add_id_to_dataframes(category_dataframe)
-    availability_dataframe = add_id_to_dataframes(availability_dataframe)
     books_dataframe = add_id_to_dataframes(books_dataframe)
 
     connection = db.create_and_connect_to_database()
@@ -302,17 +283,13 @@ def execute_checks_and_queries(
         query_op_categories = pd.read_sql_query(
             select_all_categories_query,
             connection)
-        query_op_availability = pd.read_sql_query(
-            select_all_availability_query,
-            connection)
+
         print("Checking if individual database tables "   "and DataFrames are equal...")
         print("Are the two books DataFrames equal? ",   query_op_books.equals(books_dataframe))
         print("Is length of books table and books DataFrame equal? ",   len(query_op_books) == len(books_dataframe))
         print("Are the two category DataFrames equal? ",   query_op_categories.equals(category_dataframe))
         print("Is length of category table and category DataFrame equal? ",   len(query_op_categories) == len(category_dataframe))
-        print("Are the two availability DataFrames equal? ",   query_op_availability.equals(availability_dataframe))
-        print("Is length of availability table and availability DataFrame equal? ",   len(query_op_availability) == len(availability_dataframe))
-
+        
         
         # 10 - SQL JOIN VS PANDAS MERGE
         # --------------------------------------------------
@@ -328,8 +305,8 @@ def execute_checks_and_queries(
         # pandas.merge() result
         pandas_merge_result = prepare_pandas_join_result(
             books_dataframe,
-            category_dataframe,
-            availability_dataframe)
+            category_dataframe
+            )
         # Standardize both DataFrames
         sql_join_result = standardize_join_result(
             query_op_all_join)

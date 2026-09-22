@@ -179,6 +179,136 @@ If the module is imported as a package, adjust the import paths according to you
 
 ---
 
+## Module 2: Analytics
+
+This module uses the Titanic dataset to demonstrate an end-to-end analytics workflow: exploratory analysis, data preparation, classification, regression, model comparison, and model persistence.
+
+### Contents
+
+```text
+analytics/
+├── data_profiler.ipynb                    # EDA, missing-data treatment, plots, and data story
+├── analysis.ipynb                         # Modeling, evaluation, tuning, and artifact export
+├── input_data/titanic.csv                 # Local fallback copy of the dataset
+└── titanic_random_forest_pipeline.joblib  # Saved fitted preprocessing + Random Forest pipeline
+```
+
+### Workflow
+
+1. `data_profiler.ipynb` loads Seaborn's Titanic dataset, with `input_data/titanic.csv` as an offline fallback.
+2. It profiles shape, types, descriptive statistics, and missing-value rates. The workflow drops `deck` because of its high missing rate, drops the small number of rows missing embarkation values, and imputes `age` using the median age for each passenger class.
+3. It explores age and fare distributions, IQR-based outliers, fare skewness, survival rates by sex and class, and a correlation heatmap for the six core numeric columns.
+4. It adds a four-chart data story covering survival by sex, passenger class, their combination, and age; it also standardizes `age` and `fare` with `StandardScaler` for an exploratory check.
+5. `analysis.ipynb` creates a stratified train/test split using `survived` as the target. Numeric features are median-imputed and scaled; categorical features are most-frequent-imputed and one-hot encoded inside a `ColumnTransformer`.
+6. Logistic Regression, Decision Tree, and Random Forest classifiers are trained through complete scikit-learn pipelines and evaluated with confusion matrices, accuracy, precision, recall, F1, ROC curves, and AUC.
+7. The Random Forest workflow compares baseline, `class_weight="balanced"`, and training-fold-only SMOTE strategies; performs `GridSearchCV` over Random Forest hyperparameters; and reports the out-of-bag score for the best estimator.
+8. A separate linear-regression task predicts `fare`, reports MAE, RMSE, R², and adjusted R², and visualizes residuals. The final comparison keeps classification and regression metrics in separate metric groups.
+9. The best fitted Random Forest pipeline is saved with Joblib and reloaded to verify that it can predict on raw feature input.
+
+### Running the notebooks
+
+Open and run the notebooks from the `analytics/` directory in this order:
+
+1. `data_profiler.ipynb`
+2. `analysis.ipynb`
+
+The notebooks require common data-science packages including `pandas`, `numpy`, `seaborn`, `matplotlib`, `scikit-learn`, `imbalanced-learn`, and `joblib`.
+
+---
+
+## Module 3: Support Assistant
+
+This module provides a policy-focused Zepto support assistant. It retrieves relevant policy documents from a persistent ChromaDB collection, uses a LangGraph workflow to route questions, and exposes a validated FastAPI endpoint.
+
+### Contents
+
+```text
+support_assistant/
+├── api.py                         # FastAPI application and POST /ask endpoint
+├── graph.py                       # LangGraph state, routing, retrieval, and response schema
+├── ingest.py                      # Embeds and stores the policy documents in ChromaDB
+├── prompt_template.py             # Prompt for an optional future LLM implementation
+├── docs/                          # Eight Zepto policy documents
+├── chroma_db/                     # Persistent ChromaDB vector store
+└── support_assistant_pipeline.ipynb
+```
+
+### How it works
+
+1. Run `ingest.py` to load the eight text files in `docs/`, embed each document with `all-MiniLM-L6-v2`, and upsert them into the `zepto_support_docs` ChromaDB collection.
+2. A request to `POST /ask` is passed to the compiled LangGraph workflow.
+3. The graph classifies the query as a policy or general question. Policy-related queries are retrieved against the vector store (top three chunks); general queries receive a scope-limited response.
+4. Responses conform to the `FinalAnswer` schema:
+
+```json
+{
+  "answer": "...",
+  "sources": ["doc_04"],
+  "confidence": 1.0
+}
+```
+
+The default `MOCK_LLM=1` mode uses deterministic keyword routing and returns a snippet from the best retrieved policy document. Setting `MOCK_LLM=0` preserves the same fallback behavior while leaving a clear extension point for a real LLM. `prompt_template.py` defines the grounded-answer prompt intended for that extension.
+
+### Run the assistant
+
+Install dependencies such as `fastapi`, `uvicorn`, `langgraph`, `chromadb`, `sentence-transformers`, and `pydantic`, then run these commands from the project root:
+
+```powershell
+python support_assistant/ingest.py
+uvicorn support_assistant.api:app --reload
+```
+
+Example request:
+
+```powershell
+Invoke-RestMethod -Method Post http://127.0.0.1:8000/ask `
+  -ContentType 'application/json' `
+  -Body '{"query":"How can I track my delivery?"}'
+```
+
+### Tested Answeres:
+------------------------
+
+PS CapstoneProject\Zepto-Data-AI-Platform> $response = Invoke-RestMethod `
+>>     -Uri "http://127.0.0.1:8000/ask" `
+>>     -Method POST `
+>>     -ContentType "application/json" `
+>>     -Body (@{ query = "How can I track my delivery?" } | ConvertTo-Json)
+>> 
+>> $response | Format-List *
+
+
+answer     : Based on the retrieved context: Every Zepto 
+             order shows a live rider-tracking map from 
+             the moment it is packed until delivery, 
+             accessible from the 'Track Order' screen. 
+             Estimated delivery time updates 
+             automatically as the rider move
+sources    : {doc_04, doc_01, doc_02}
+confidence : 1.0
+
+
+
+PS CapstoneProject\Zepto-Data-AI-Platform>  $response = Invoke-RestMethod `
+>>     -Uri "http://127.0.0.1:8000/ask" `
+>>     -Method POST `
+>>     -ContentType "application/json" `
+>>     -Body (@{ query = "What is the weather today?" } | ConvertTo-Json)
+>> 
+>> $response | ConvertTo-Json -Depth 5
+{
+    "answer":  "I can only answer questions about Zepto policies right now.",
+    "sources":  [
+
+                ],
+    "confidence":  1.0
+}
+
+The available policy topics cover delivery, returns and refunds, membership, order tracking, cancellation, damaged or missing items, gift cards, and customer-support hours. The API documentation is available at `http://127.0.0.1:8000/docs` while the server is running.
+
+---
+
 ## Summary
 
-The Data Pipeline module transforms raw scraped website data into a cleaned, structured, and database-ready dataset. It is the first core stage of the Zepto-Data-AI-Platform and supports analytics, reporting, and future AI integration.
+The platform is organized into three modules: a book-data pipeline that produces structured SQLite data, a Titanic analytics workflow that demonstrates EDA and predictive modeling, and a policy-based Zepto support assistant that offers retrieval-backed API responses.

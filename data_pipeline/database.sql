@@ -8,10 +8,6 @@ CREATE TABLE category_master (
     category TEXT UNIQUE NOT NULL
 );
 
-CREATE TABLE availability_master (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    availability TEXT UNIQUE NOT NULL
-);
 
 CREATE TABLE books (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,11 +16,8 @@ CREATE TABLE books (
     price_inr REAL,
     rating INTEGER,
     category_id INTEGER,
-    availability_id INTEGER,
+    availability boolean,
 
     FOREIGN KEY (category_id)
-        REFERENCES category_master(id),
-
-    FOREIGN KEY (availability_id)
-        REFERENCES availability_master(id)
+        REFERENCES category_master(id)
 );
