@@ -1,0 +1,153 @@
+1. Load the classic Titanic dataset once, through Seaborn's built-in loader: sns.load_dataset('titanic'). 
+    |__>DONE
+
+2. A natural way to structure this inside /analytics is two clearly ordered notebooks that share one committed CSV — 
+    e.g. 01_eda.ipynb 
+        (loads the data, profiles it, cleans it, saves titanic.csv, and produces the full EDA story) 
+        followed by 02_modeling.ipynb 
+        (reads the same committed titanic.csv that 01_eda.ipynb produced, and continues straight into the modeling pipeline). 
+
+Part A — Profiling, cleaning, and the data story
+1.	Load the dataset and profile it: 
+    print df.info(), df.describe(), and df.shape
+        |__> done
+    Compute and report the percentage of missing values in every column that has any. 
+        |__> done
+    after loading, save the loaded DataFrame 
+        — df.to_csv("titanic.csv", index=False)
+        |__> done
+
+    '''
+    if sns.load_dataset(...) cannot reach the internet at grading time.
+    This is the one and only load of the raw dataset; 
+    everything below — including the modeling pipeline — works from this same DataFrame or its saved CSV.
+    '''
+    # so, a try except must be added while loading. 
+    # in try, data loading misght fail if no internet exists.
+        so, in except, data must be load from csv
+        
+
+2.  Apply missing-value handling per column, 
+    following this threshold rule
+    (under 5% missing → drop those rows; 
+       5%–30% missing → impute) 
+
+    for any column whose missing rate is so high that imputation would be unreliable, 
+    explicitly decide to either drop the column or encode "missing" as its own category, and justify that decision in writing.
+    State the exact percentage you measured for each affected column before choosing its strategy.
+    |__> DONE
+
+3.  Univariate analysis -->> done
+    1. plot a histogram and a box plot for both age and fare. 
+        |__> DONE
+    2.  Using the IQR rule (outliers are points outside [Q1 − 1.5×IQR, Q3 + 1.5×IQR]), report how many outliers each column has.
+        |__> DONE
+    3.  Compute mean, median, and mode for fare, 
+        and state in writing whether its distribution is right-skewed, left-skewed, or symmetric, referencing the mean/median/mode ordering.
+        |__> DONE
+
+4.  Bivariate analysis
+    1.  using boolean masking (with &/| combinations), compute and report survival rate broken down by (a) sex, (b) pclass, and (c) sex and pclass together
+        |__> Done
+    2.  Then compute a correlation matrix restricted to exactly these six columns: survived, pclass, age, sibsp, parch, and fare — the dataset's numeric columns, including survived (0/1-valued) as the natural numeric target. 
+        Exclude the boolean-typed columns adult_male and alone from the correlation matrix: they are derived/redundant flags (directly computable from sex/age and from sibsp+parch respectively), not independent measured features.
+        |__> Done
+    3.  Render the resulting 6×6 matrix as a heatmap using sns.heatmap,
+        with a short written interpretation of the two strongest correlations you observe
+         — defined precisely as the two feature pairs with the largest absolute off-diagonal correlation coefficients (rank all off-diagonal pairs by abs(correlation) and take the top two).
+        |__>  Done
+
+5.  Multivariate "data story":
+    1. produce at least 4 distinct charts (any combination of bar/box/scatter/heatmap/pair-plot) that together build a coherent argument about who was more likely to survive and why
+        |__ Done
+    2. Each chart must be accompanied by a 2–4 sentence written interpretation in your README/notebook — a chart with no interpretation does not count.
+        |__ Done
+    
+6.  Exploratory check:
+    1.  standardize age and fare using the z score formula
+        z_score= (x-mean)/standard_deviation
+        use standard scaler or compute it manually
+            |__ Done
+    2.  show before- after comparison
+            ex: show printed summary of means / stds or overlaid distribution plots
+        to confirm columns have approx mean of 0 and std 1
+            |__ Done
+
+Part B — Predictive modeling, continuing from the same cleaned data
+7.  data split:
+    1. Split data to train and test sets
+        use stratify split
+        use survived as clssification target
+
+8.  Preprocessing :
+    1.  handle missing values (need not match task 2 exactly)
+        |__> Done
+    2.  encode categorical columns with 1 hot encoding or label
+        |__> 
+    3.  Scale numeric features with standard scaler.
+    #   all Preprocessing stwps must be fit only on the training split
+        then applied in transform-only mode to the test split 
+    #   It is strongly recommended you implement this with a scikit-learn Pipeline/ColumnTransformer (a ColumnTransformer for per-column imputing/encoding/scaling, wrapped in a Pipeline with the final estimator) so the fit-on-train / transform-on-test separation is enforced structurally rather than left for you to remember by hand.
+
+9. training:
+    1.  train 3 classfiers on same train/test split-
+        - logistic regression
+        - decision tree
+            - render with plot_tree (label feature names and class names)
+        - random forest
+    
+10. evaluate all 3 models-
+    1.  a confusion matrix,
+        accuracy,
+        precision, 
+        recall, 
+        F1 score, 
+        an ROC curve with AUC.
+    2.  present them side by side in a tablr
+
+11. Imbalance handling comparison:
+    report survived/not-survived class balance,
+    then retrain (any one of the three models is enough for this sub-task) three ways — (a) baseline/no handling, (b) class_weight='balanced', (c) SMOTE oversampling applied only to the training fold (to avoid leakage) — and compare precision/recall/F1 across the three variants, with a short written conclusion on which imbalance strategy worked best and why.
+
+12. Hyperparameter tuning
+    1. run GridSearchCV over the Random Forest's n_estimators, max_depth, and max_features
+    #   Because oob_score_ is only populated when oob_score=True is passed at construction time, you must construct the estimator as RandomForestClassifier(oob_score=True, ...) 
+        (together with your other chosen/tuned parameters) 
+        — otherwise the OOB score will not be available to report.
+
+13. Regression side-task:
+    1. using the same dataset, predict fare from the other available features with a multivariate linear regression.
+    2. Report MAE, RMSE, R², and Adjusted R², and produce a residual plot, stating in writing whether it shows heteroscedasticity (a non-random spread of residuals).
+
+14. Model comparison table:
+    1. model comparison table that presents the three classifiers' metrics (accuracy, precision, recall, F1, AUC) side by side, and the regression model's metrics (MAE, RMSE, R², Adjusted R²) side by side as their own separate columns. 
+    2. Classification metrics and regression metrics are on different scales and are not directly comparable numbers — the table must present them as two distinct metric groups (one per model type), not implied to be on a single shared scale. 
+
+15. Save your best-performing complete pipeline — the fitted preprocessing steps (imputer/encoder/scaler, or your ColumnTransformer) together with the final estimator, as a single combined object (e.g. a scikit-learn Pipeline) — to disk using joblib.dump(full_pipeline, ...). Do not save the bare estimator alone: the saved artifact must be usable end-to-end on raw, unpreprocessed new data. Include a short script/cell that reloads it with joblib.load and confirms it still predicts correctly on raw input.
+
+Justifications to be written:
+1. -
+2.  if columns whose missing rate is high and imputation is unreliable, 
+    decide if column should be dropped or have its own missing category.
+    justify the decision
+3.  state weather the distributon is right skewed, left skewed or symmetric (with ref to mean, median, mode)
+4.  Render the resulting 6×6 matrix as a heatmap using sns.heatmap, 
+    with a short written interpretation of the two strongest correlations you observe — defined precisely as the two feature pairs with the largest absolute off-diagonal correlation coefficients (rank all off-diagonal pairs by abs(correlation) and take the top two).
+5.  Each chart must be accompanied by a 2–4 sentence written interpretation in your README/notebook 
+    — a chart with no interpretation does not count.
+6.  -
+7.  -
+8.  State choice - is data matching task 2 data or not
+9.  -
+10. -
+11. and compare precision/recall/F1 across the three variants(baseline/no handling, class_weight='balanced',SMOTE ), with a short written conclusion on which imbalance strategy worked best and why.
+12. report the best parameter combination and the corresponding out-of-bag (OOB) score
+13. Report MAE, RMSE, R², and Adjusted R², and produce a residual plot, stating in writing whether it shows heteroscedasticity (a non-random spread of residuals).
+14. Add a 3–5 sentence final written recommendation of which classifier you would deploy and why, referencing specific metric values.
+
+
+Doubts:
+1. where should writing be given? read me or seperate file?
+2. can I add additional data in csv for convinience?
+3. definitely out of stock undaala??
+4. config file use cheyaccha?
