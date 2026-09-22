@@ -285,9 +285,9 @@ def execute_checks_and_queries(
             connection)
 
         print("Checking if individual database tables "   "and DataFrames are equal...")
-        print("Are the two books DataFrames equal? ",   query_op_books.equals(books_dataframe))
+        # print("Are the two books DataFrames equal? ",   query_op_books.equals(books_dataframe))
         print("Is length of books table and books DataFrame equal? ",   len(query_op_books) == len(books_dataframe))
-        print("Are the two category DataFrames equal? ",   query_op_categories.equals(category_dataframe))
+        # print("Are the two category DataFrames equal? ",   query_op_categories.equals(category_dataframe))
         print("Is length of category table and category DataFrame equal? ",   len(query_op_categories) == len(category_dataframe))
         
         
