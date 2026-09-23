@@ -36,8 +36,6 @@ data_pipeline/
 │   ├── books_by_category_raw_data.csv
 │   └── cleaned_data.csv
 ├── data_pipeline_workflow.ipynb
-├── query_tester.ipynb
-├── x_data_scraper.py
 └── __pycache__/
 ```
 
@@ -235,7 +233,6 @@ support_assistant/
 ├── prompt_template.py             # Prompt for an optional future LLM implementation
 ├── docs/                          # Eight Zepto policy documents
 ├── chroma_db/                     # Persistent ChromaDB vector store
-└── support_assistant_pipeline.ipynb
 ```
 
 ### How it works
@@ -274,7 +271,7 @@ Invoke-RestMethod -Method Post http://127.0.0.1:8000/ask `
 
 ### Tested Answeres:
 ------------------------
-
+'''
 PS CapstoneProject\Zepto-Data-AI-Platform> $response = Invoke-RestMethod `
 >>     -Uri "http://127.0.0.1:8000/ask" `
 >>     -Method POST `
@@ -311,7 +308,7 @@ PS CapstoneProject\Zepto-Data-AI-Platform>  $response = Invoke-RestMethod `
 }
 
 The available policy topics cover delivery, returns and refunds, membership, order tracking, cancellation, damaged or missing items, gift cards, and customer-support hours. The API documentation is available at `http://127.0.0.1:8000/docs` while the server is running.
-
+'''
 ---
 
 ## Summary
