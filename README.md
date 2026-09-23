@@ -1,4 +1,9 @@
-# Zepto-Data-AI-Platform
+# RetailLens
+
+### Retail Analytics & AI Platform
+
+RetailLens is an end-to-end retail data and AI platform for
+data engineering, analytics, and AI-powered support.
 
 ## Module 1: Data Pipeline
 
